@@ -8,6 +8,7 @@ The app has a page for running chat-based models and also one for nultimodal mod
 
 ![GIF](assets/ollama_streamlit.gif)
 
+![alt text](assets/new_RAG_pdf_support.png)
 **Check out the video tutorial 👇**
 
 <a href="https://youtu.be/bAI_jWsLhFM">
@@ -15,7 +16,7 @@ The app has a page for running chat-based models and also one for nultimodal mod
 </a>
 
 ## Features
-
+- **RAG Support with custom PDFs**: Run your RAG models with custom PDFs.
 - **Interactive UI**: Utilize Streamlit to create a user-friendly interface.
 - **Local Model Execution**: Run your Ollama models locally without the need for external APIs.
 - **Real-time Responses**: Get real-time responses from your models directly in the UI.
