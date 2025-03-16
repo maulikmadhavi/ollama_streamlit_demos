@@ -21,7 +21,7 @@ def extract_model_names(models_info: list) -> tuple:
         A tuple containing the model names.
     """
 
-    return tuple(model["name"] for model in models_info["models"])
+    return tuple(model["model"] for model in models_info["models"])
 
 
 def main():
@@ -61,14 +61,21 @@ def main():
             st.markdown(message["content"])
 
     if prompt := st.chat_input("Enter a prompt here..."):
+        print(f"user message: {prompt}")
         try:
-            st.session_state.messages.append(
-                {"role": "user", "content": prompt})
+            st.session_state.messages.append({"role": "user", "content": prompt})
 
             message_container.chat_message("user", avatar="😎").markdown(prompt)
+            print(f"selected_model= {selected_model}")
 
             with message_container.chat_message("assistant", avatar="🤖"):
                 with st.spinner("model working..."):
+                    print(
+                        [
+                            {"role": m["role"], "content": m["content"]}
+                            for m in st.session_state.messages
+                        ]
+                    )
                     stream = client.chat.completions.create(
                         model=selected_model,
                         messages=[
@@ -79,8 +86,7 @@ def main():
                     )
                 # stream response
                 response = st.write_stream(stream)
-            st.session_state.messages.append(
-                {"role": "assistant", "content": response})
+            st.session_state.messages.append({"role": "assistant", "content": response})
 
         except Exception as e:
             st.error(e, icon="⛔️")
