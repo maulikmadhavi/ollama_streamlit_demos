@@ -9,6 +9,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import numpy as np
 import faiss
 from typing import List, Tuple
+import requests
+from duckduckgo_search import DDGS
 
 st.set_page_config(
     page_title="Chat playground",
@@ -87,6 +89,27 @@ def get_relevant_context(
     return context
 
 
+def perform_internet_search(query: str, num_results: int = 3) -> str:
+    """Perform internet search using DuckDuckGo and return formatted results"""
+    try:
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=num_results))
+
+        if not results:
+            return "No search results found."
+
+        formatted_results = "### Internet Search Results:\n\n"
+        for i, result in enumerate(results, 1):
+            title = result.get("title", "No title")
+            body = result.get("body", "No content")
+            href = result.get("href", "No link")
+            formatted_results += f"{i}. **{title}**\n{body}\n[Source]({href})\n\n"
+
+        return formatted_results
+    except Exception as e:
+        return f"Error performing internet search: {str(e)}"
+
+
 def main():
     """
     The main function that runs the application.
@@ -113,9 +136,16 @@ def main():
             st.page_switch("pages/03_⚙️_Settings.py")
         return
 
-    # Add PDF Upload Section
-    with st.expander("📄 Upload PDF for RAG"):
-        uploaded_file = st.file_uploader("Upload a PDF document", type="pdf")
+    # Main settings section with tabs for different features
+    st.write("### Model Enhancement Features")
+    tabs = st.tabs(["📄 PDF Context (RAG)", "🌐 Internet Search", "⚙️ Advanced"])
+
+    # PDF Upload Section in first tab
+    with tabs[0]:
+        st.caption("Upload a PDF document to provide context for your questions.")
+        uploaded_file = st.file_uploader(
+            "Upload a PDF document", type="pdf", key="pdf_uploader"
+        )
         if uploaded_file:
             with st.spinner("Processing PDF..."):
                 # Extract text from PDF
@@ -140,6 +170,56 @@ def main():
                         f"PDF processed successfully! {len(text_chunks)} chunks extracted."
                     )
 
+    # Internet Search Options in second tab
+    with tabs[1]:
+        st.caption("Enable internet search to get real-time information from the web.")
+
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            internet_search_enabled = st.toggle(
+                "Enable Internet Search",
+                value=st.session_state.get("internet_search_enabled", False),
+                help="When enabled, the model will search the internet for relevant information before responding",
+            )
+
+        with col2:
+            num_search_results = st.slider(
+                "Number of search results",
+                min_value=1,
+                max_value=10,
+                value=st.session_state.get("num_search_results", 3),
+                disabled=not internet_search_enabled,
+                help="How many search results to retrieve from the internet",
+            )
+
+        if internet_search_enabled:
+            st.session_state.internet_search_enabled = True
+            st.session_state.num_search_results = num_search_results
+            st.info(
+                "🌐 Internet search is now ENABLED. Your queries will be sent to DuckDuckGo to retrieve relevant information."
+            )
+        else:
+            st.session_state.internet_search_enabled = False
+            st.warning(
+                "🔍 Internet search is DISABLED. The model will rely only on its training data."
+            )
+
+    # Advanced options in third tab
+    with tabs[2]:
+        st.caption("Additional configuration options.")
+        st.text("No advanced options available yet.")
+
+    # Display status of enabled features
+    feature_status = []
+    if st.session_state.get("rag_enabled", False):
+        feature_status.append("📄 PDF Context")
+    if st.session_state.get("internet_search_enabled", False):
+        feature_status.append("🌐 Internet Search")
+
+    if feature_status:
+        st.success(f"Active features: {', '.join(feature_status)}")
+
     message_container = st.container(height=500, border=True)
 
     if "messages" not in st.session_state:
@@ -147,6 +227,9 @@ def main():
 
     if "rag_enabled" not in st.session_state:
         st.session_state.rag_enabled = False
+
+    if "internet_search_enabled" not in st.session_state:
+        st.session_state.internet_search_enabled = False
 
     for message in st.session_state.messages:
         avatar = "🤖" if message["role"] == "assistant" else "😎"
@@ -165,21 +248,35 @@ def main():
                 with st.spinner("model working..."):
                     # If RAG is enabled, get relevant context
                     messages_for_model = []
+                    context_parts = []
 
                     if st.session_state.rag_enabled:
-                        context = get_relevant_context(
+                        rag_context = get_relevant_context(
                             prompt,
                             client,
                             selected_model,
                             st.session_state.vector_index,
                             st.session_state.text_chunks,
                         )
+                        context_parts.append(f"PDF context: {rag_context}")
 
-                        # Add system message with context
+                    # If internet search is enabled, get search results
+                    if st.session_state.internet_search_enabled:
+                        with st.spinner("Searching the internet..."):
+                            search_results = perform_internet_search(
+                                prompt, st.session_state.num_search_results
+                            )
+                            context_parts.append(
+                                f"Internet search results: {search_results}"
+                            )
+
+                    # Add system message with combined context if any
+                    if context_parts:
+                        combined_context = "\n\n".join(context_parts)
                         messages_for_model.append(
                             {
                                 "role": "system",
-                                "content": f"Answer the question based on this context: {context}",
+                                "content": f"Answer the question based on this information: {combined_context}",
                             }
                         )
 

@@ -1,3 +1,8 @@
 ollama
 streamlit==1.33.0
 openai
+duckduckgo-search
+faiss-cpu==1.10.0
+numpy==1.26.4
+pydantic==1.10.21
+pypdf==5.4.0

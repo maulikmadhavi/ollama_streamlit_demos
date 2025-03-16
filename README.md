@@ -17,6 +17,7 @@ The app has a page for running chat-based models and also one for nultimodal mod
 
 ## Features
 - **RAG Support with custom PDFs**: Run your RAG models with custom PDFs.
+- **Internet Search Integration**: Enhance responses with real-time information from DuckDuckGo (disabled by default).
 - **Interactive UI**: Utilize Streamlit to create a user-friendly interface.
 - **Local Model Execution**: Run your Ollama models locally without the need for external APIs.
 - **Real-time Responses**: Get real-time responses from your models directly in the UI.
@@ -46,6 +47,15 @@ streamlit run 01_💬_Chat_Demo.py
 ```
 
 Navigate to the URL provided by Streamlit in your browser to interact with the app.
+
+### Using Internet Search
+
+1. After launching the app, navigate to the "🌐 Internet Search" tab
+2. Toggle the "Enable Internet Search" switch to ON
+3. Adjust the number of search results if needed
+4. Now when you ask questions, the model will search the internet for the most up-to-date information
+
+**Note:** Internet search is disabled by default to respect your privacy and to limit API calls.
 
 **NB: Make sure you have downloaded [Ollama](https://ollama.com/) to your system.**
 
